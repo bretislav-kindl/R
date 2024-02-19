@@ -51,6 +51,12 @@ residuals(m1)
 
 
 # Cviceni -----------------------------------------------------------------
-lm(vote ~ agea, data=turnout)
-summary(m1)
-print(m1)
+lm_vote = lm(vote ~ agea, data=turnout)
+summary(lm_vote)
+print(lm_vote)
+residuals(lm_vote)
+plot_predictions(lm_vote,condition = "agea", points = 0.3)
+predict(lm_vote, newdata = data.frame(agea = c(25,2024-1960,2024-1969)))
+
+turnout = turnout %>% mutate(agea_centered = agea - 42.7)
+lm(vote~agea_centered, data = turnout)

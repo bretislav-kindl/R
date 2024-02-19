@@ -153,7 +153,7 @@ cvvm_readiness_index
 #                                     'Válečný konflikt')
 #finalni select podstatnych sloupcu
 cvvm_readiness_index = cvvm_readiness_index %>% select(name, mean, sd, dont_know_per, label)
-cvvm_readiness_index %>% round()
+cvvm_readiness_index %>% mutate(across(c(mean, sd, dont_know_per),round,2))
 #finalni vypis sestaveneho df
 print(cvvm_readiness_index, n=count(cvvm_readiness_index))
 
