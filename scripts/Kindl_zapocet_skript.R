@@ -79,7 +79,7 @@ cvvm_danger_index = cvvm_danger_index %>% arrange(desc(mean))
 #pripadni popisu pro jednotlive promenne
 cvvm_danger_index %>% names()
 labels %>% names()
-cvvm_danger_index %>% left_join(labels, by="name")
+cvvm_danger_index = cvvm_danger_index %>% left_join(labels, by="name")
 cvvm_danger_index
 #finalni select podstatnych sloupcu
 cvvm_danger_index = cvvm_danger_index %>% select(name, mean, sd, dont_know_per, label)
@@ -122,7 +122,7 @@ cvvm_readiness_index = cvvm_readiness_index %>% arrange(desc(mean))
 #pripadni popisu pro jednotlive promenne
 cvvm_readiness_index %>% names()
 labels %>% names()
-cvvm_readiness_index %>% left_join(labels, by="name")
+cvvm_readiness_index = cvvm_readiness_index %>% left_join(labels, by="name")
 cvvm_readiness_index
 #zpusob pridani labels zavysejici na pridani labels podle serazeni promennych
 # cvvm_readiness_index$label = c('Epidemie',
