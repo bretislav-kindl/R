@@ -153,13 +153,42 @@ cvvm_readiness_index
 #                                     'Válečný konflikt')
 #finalni select podstatnych sloupcu
 cvvm_readiness_index = cvvm_readiness_index %>% select(name, mean, sd, dont_know_per, label)
-cvvm_readiness_index %>% mutate(across(c(mean, sd, dont_know_per),round,2))
+cvvm_readiness_index_rounded = cvvm_readiness_index %>% mutate(across(c(mean, sd),round,1), dont_know_per= round(dont_know_per,2))
 #finalni vypis sestaveneho df
-print(cvvm_readiness_index, n=count(cvvm_readiness_index))
+print(cvvm_readiness_index_rounded, n=count(cvvm_readiness_index_rounded))
 
 
 # Generovani grafu --------------------------------------------------------
-
-#Filtrace dat
+#definovani labels pro grafy
+#definovani a pridani labels
+labels_graph = data.frame(name = cvvm_filtred %>% names(), label = 0)
+labels_graph %>% pivot_wider(names_from = name, values_from = label)
+labels_graph$label[which(labels_graph$name == "PO_109A" | labels_graph$name == "PO_110A")] = 'Přírodní katastrofy'
+labels_graph$label[which(labels_graph$name == "PO_109B" | labels_graph$name == "PO_110B")] = 'Epidemie'
+labels_graph$label[which(labels_graph$name == "PO_109C" | labels_graph$name == "PO_110C")] = 'Dlouhodobé výkyvy počasí'
+labels_graph$label[which(labels_graph$name == "PO_109D" | labels_graph$name == "PO_110D")] = 'Únik nebezpečných chemických/ radioaktivních látek'
+labels_graph$label[which(labels_graph$name == "PO_109E" | labels_graph$name == "PO_110E")] = 'Nedostatek potravin/ pitné vody'
+labels_graph$label[which(labels_graph$name == "PO_109F" | labels_graph$name == "PO_110F")] = 'Výpadek elektrické energie'
+labels_graph$label[which(labels_graph$name == "PO_109G" | labels_graph$name == "PO_110G")] = 'Nedostatek ropy či plynu'
+labels_graph$label[which(labels_graph$name == "PO_109H" | labels_graph$name == "PO_110H")] = 'Výpadek internetu, mobilních sítí nebo telefonu'
+labels_graph$label[which(labels_graph$name == "PO_109I" | labels_graph$name == "PO_110I")] = 'Kybernetický útok'
+labels_graph$label[which(labels_graph$name == "PO_109J" | labels_graph$name == "PO_110J")] = 'Teroristický útok'
+labels_graph$label[which(labels_graph$name == "PO_109K" | labels_graph$name == "PO_110K")] = 'Válečný konflikt'
+labels_graph$label[which(labels_graph$name == "PO_109L" | labels_graph$name == "PO_110L")] = 'Rabování a výtržnosti'
+labels_graph$label[which(labels_graph$name == "PO_109M" | labels_graph$name == "PO_110M")] = 'Masová migrace'
+labels_graph$label[which(labels_graph$name == "PO_109N" | labels_graph$name == "PO_110N")] = 'Stárnutí populace'
+labels_graph$label[which(labels_graph$name == "PO_109O" | labels_graph$name == "PO_110O")] = 'Nárůst chudoby'
+labels_graph$label[which(labels_graph$name == "PO_109P" | labels_graph$name == "PO_110P")] = 'Krach bankovního sektoru'
+labels_graph$label[which(labels_graph$name == "PO_109Q" | labels_graph$name == "PO_110Q")] = 'Prohlubování názorových rozdílů'
+labels_graph$label[which(labels_graph$name == "PO_111A" | labels_graph$name == "PO_112A")] = 'Šíření dezinformací po internetu'
+labels_graph$label[which(labels_graph$name == "PO_111B" | labels_graph$name == "PO_112B")] = 'Manipulace ve veřejnoprávních médiích'
+labels_graph$label[which(labels_graph$name == "PO_111C" | labels_graph$name == "PO_112C")] = 'Manipulace v soukromých médiích'
+labels_graph$label[which(labels_graph$name == "PO_111D" | labels_graph$name == "PO_112D")] = 'Prohlubování ekonomických rozdílů'
+labels_graph$label[which(labels_graph$name == "PO_111E" | labels_graph$name == "PO_112E")] = 'Uchvácení státní moci ze strany úzké skupiny osob'
+labels_graph$label[which(labels_graph$name == "PO_111F" | labels_graph$name == "PO_112F")] = 'Účast extremistických politických stran ve vládě'
+labels_graph$label[which(labels_graph$name == "PO_111G" | labels_graph$name == "PO_112G")] = 'Účast politických stran prosazujících zájmy nepřátelského státu ve vládě'
+labels_graph$label[which(labels_graph$name == "PO_111H" | labels_graph$name == "PO_112H")] = 'Hospodářská/energetická závislost na nepřátelském státu'
+labels_graph$label[which(labels_graph$name == "PO_111I" | labels_graph$name == "PO_112I")] = 'Technologická závislost státu na nadnárodních společnostech'
+labels_graph
 
 #Generovani souboru
