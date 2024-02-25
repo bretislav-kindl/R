@@ -11,8 +11,9 @@ library(ggrepel)
 
 # Data --------------------------------------------------------------------
 
-cvvm <- read_rds("data/cvvm_cerven_2019.rds")
-names(cvvm)
+#cvvm <- read_rds("data/cvvm_cerven_2019.rds")
+cvvm = read_csv("https://github.com/Sociology-FA-CU/uvod-do-r/raw/master/data/cvvm_cerven_2019.csv")
+#names(cvvm)
 #dataframe se sloupci, se kterymi budem pracovat
 cvvm_filtred = cvvm %>% select(matches("PO_1[10]\\d."))
 #cvvm_filtred %>% names()
@@ -111,7 +112,7 @@ print(df_readiness_final, n=count(df_readiness_final))
 # Generovani grafu --------------------------------------------------------
 #definovani labels pro grafy
 labels_graph = data.frame(name = cvvm_filtred %>% names(), label = 0)
-labels_graph %>% pivot_wider(names_from = name, values_from = label)
+#labels_graph %>% pivot_wider(names_from = name, values_from = label)
 labels_graph$label[which(labels_graph$name == "PO_109A" | labels_graph$name == "PO_110A")] = 'Přírodní katastrofy'
 labels_graph$label[which(labels_graph$name == "PO_109B" | labels_graph$name == "PO_110B")] = 'Epidemie'
 labels_graph$label[which(labels_graph$name == "PO_109C" | labels_graph$name == "PO_110C")] = 'Dlouhodobé výkyvy počasí'
@@ -138,7 +139,7 @@ labels_graph$label[which(labels_graph$name == "PO_111F" | labels_graph$name == "
 labels_graph$label[which(labels_graph$name == "PO_111G" | labels_graph$name == "PO_112G")] = 'Účast politických stran prosazujících zájmy nepřátelského státu ve vládě'
 labels_graph$label[which(labels_graph$name == "PO_111H" | labels_graph$name == "PO_112H")] = 'Hospodářská/energetická závislost na nepřátelském státu'
 labels_graph$label[which(labels_graph$name == "PO_111I" | labels_graph$name == "PO_112I")] = 'Technologická závislost státu na nadnárodních společnostech'
-labels_graph
+# labels_graph
 
 #Priprava data framu
 df_danger_and_readiness_index_graph_labels = df_danger_and_readiness_index %>% 
@@ -158,7 +159,7 @@ df_graph_category_4 = df_graph_merge %>% filter(str_detect(name.x,"PO_111[ABCD]"
 df_graph_category_5 = df_graph_merge %>% filter(str_detect(name.x,"PO_111[EFGHI]")) %>% mutate(category = 'Politické hrozby')
 df_graph_category_6 = df_graph_merge %>% filter(str_detect(name.x,"PO_109[NOPQ]")) %>% mutate(category = 'Sociální hrozby')
 df_graph_merge_categories = rbind(df_graph_category_1, df_graph_category_2,df_graph_category_3,df_graph_category_4, df_graph_category_5, df_graph_category_6)
-df_graph_merge_categories 
+#df_graph_merge_categories 
 
 #graf
 df_graph_merge_categories$category = factor(df_graph_merge_categories$category, levels = c('Přírodní hrozby', 'Infrastrukturní hrozby', 'Konfliktní hrozby', 'Informační hrozby', 'Politické hrozby', 'Sociální hrozby'))
