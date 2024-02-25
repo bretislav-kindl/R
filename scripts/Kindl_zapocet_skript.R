@@ -5,6 +5,7 @@
 library(tidyverse)
 library(scales)
 library(RColorBrewer)
+library(ggrepel)
 
 # Data --------------------------------------------------------------------
 
@@ -12,12 +13,12 @@ cvvm <- read_rds("data/cvvm_cerven_2019.rds")
 names(cvvm)
 #dataframe se sloupci, se kterymi budem pracovat
 cvvm_filtred = cvvm %>% select(matches("PO_1[10]\\d."))
-cvvm_filtred %>% names()
+#cvvm_filtred %>% names()
 
 # Sestavovani df ------------------------------------------------------
 #definovani a pridani labels
 labels = data.frame(name = cvvm_filtred %>% names(), label = 0)
-labels %>% pivot_wider(names_from = name, values_from = label)
+#labels %>% pivot_wider(names_from = name, values_from = label)
 labels$label[which(labels$name == "PO_109A" | labels$name == "PO_110A")] = 'Přírodní katastrofy, např. povodeň, větrná smršť, rozsáhlé požáry atd.'
 labels$label[which(labels$name == "PO_109B" | labels$name == "PO_110B")] = 'Epidemie'
 labels$label[which(labels$name == "PO_109C" | labels$name == "PO_110C")] = 'Dlouhodobé výkyvy počasí, např. dlouhodobé sucho, dlouhodobě extrémně vysoké nebo nízké teploty apod.'
@@ -44,14 +45,11 @@ labels$label[which(labels$name == "PO_111F" | labels$name == "PO_112F")] = 'Úč
 labels$label[which(labels$name == "PO_111G" | labels$name == "PO_112G")] = 'Účast politických stran prosazujících zájmy nepřátelského státu ve vládě'
 labels$label[which(labels$name == "PO_111H" | labels$name == "PO_112H")] = 'Energetická či jiná hospodářská závislost na nepřátelském státu'
 labels$label[which(labels$name == "PO_111I" | labels$name == "PO_112I")] = 'Technologická závislost státu na nadnárodních společnostech jako jsou Huawei, Facebook, Google apod.'
-labels
-# Df hrozeb ----------------------------------------
-#vyber odpovedi z otazek - hrozeb
+#labels
+#vyber odpovedi z otazek
 cvvm_danger = cvvm_filtred %>% select(matches("PO_1((0\\d)|(11))."))
-#kontrola vybranych sloupcu
-cvvm_danger %>% names()
-#kontrola tabulkou hodnoty
-cvvm_danger %>% select("PO_109A")  %>% table()
+cvvm_readiness = cvvm_filtred %>% select(matches("PO_1((12)|(10))."))
+
 #rekodovani hodnot
 cvvm_danger = cvvm_danger %>%
   mutate(across(
@@ -64,38 +62,7 @@ cvvm_danger = cvvm_danger %>%
   )) %>%
   mutate(across(everything(),
                 ~ strtoi(.x)))
-#vypocet mean, sd a poctu "nevi" pro hrozby
-cvvm_danger_index = cvvm_danger %>% pivot_longer(cols = everything()) %>%
-  group_by(name) %>%
-  summarise(
-    mean = mean(value, na.rm = TRUE),
-    sd = sd(value, na.rm = TRUE),
-    dont_know = sum(is.na(value)),
-    n = n(),
-    dont_know_per = dont_know / n
-  ) 
-#serazeni df podle prumeru
-cvvm_danger_index = cvvm_danger_index %>% arrange(desc(mean))
-#pripadni popisu pro jednotlive promenne
-cvvm_danger_index %>% names()
-labels %>% names()
-cvvm_danger_index = cvvm_danger_index %>% left_join(labels, by="name")
-cvvm_danger_index
-#finalni select podstatnych sloupcu
-cvvm_danger_index = cvvm_danger_index %>% select(name, mean, sd, dont_know_per, label)
 
-#finalni vypis sestaveneho df
-print(cvvm_danger_index, n=count(cvvm_danger_index))
-
-
-# Df pripravenost ---------------------------------------------------------
-#vyber odpovedi z otazek - pripravenost
-cvvm_readiness = cvvm_filtred %>% select(matches("PO_1((12)|(10))."))
-#kontrola vybranych sloupcu
-cvvm_readiness %>% names()
-#kontrola tabulkou frekvenci hodnoty
-cvvm_readiness %>% select("PO_110A")  %>% table()
-#rekodovani hodnot
 cvvm_readiness = cvvm_readiness %>%
   mutate(across(
     everything(),
@@ -107,8 +74,10 @@ cvvm_readiness = cvvm_readiness %>%
   )) %>%
   mutate(across(everything(),
                 ~ strtoi(.x)))
-#vypocet mean, sd a poctu "nevi" pro hrozby
-cvvm_readiness_index = cvvm_readiness %>% pivot_longer(cols = everything()) %>%
+
+#spojeni data framu pro spolecne transforamce
+df_danger_and_readiness = cbind(cvvm_danger, cvvm_readiness)
+df_danger_and_readiness_index = df_danger_and_readiness %>% pivot_longer(cols = everything()) %>%
   group_by(name) %>%
   summarise(
     mean = mean(value, na.rm = TRUE),
@@ -117,50 +86,28 @@ cvvm_readiness_index = cvvm_readiness %>% pivot_longer(cols = everything()) %>%
     n = n(),
     dont_know_per = dont_know / n
   ) 
-#serazeni df podle prumeru
-cvvm_readiness_index = cvvm_readiness_index %>% arrange(desc(mean))
-#pripadni popisu pro jednotlive promenne
-cvvm_readiness_index %>% names()
-labels %>% names()
-cvvm_readiness_index = cvvm_readiness_index %>% left_join(labels, by="name")
-cvvm_readiness_index
-#zpusob pridani labels zavysejici na pridani labels podle serazeni promennych
-# cvvm_readiness_index$label = c('Epidemie',
-#                                     'Přírodní katastrofy, např. povodeň, větrná smršť, rozsáhlé požáry atd.',
-#                                     'Únik nebezpečných chemických či radioaktivních látek do prostředí',
-#                                     'Rabování a výtržnosti',
-#                                     'Účast extremistických politických stran ve vládě',
-#                                     'Účast politických stran prosazujících zájmy nepřátelského státu ve vládě ',
-#                                     'Rozsáhlý a dlouhodobý výpadek dodávek elektrické energie',
-#                                     'Energetická či jiná hospodářská závislost na nepřátelském státu',
-#                                     'Dlouhodobý nedostatek ropy či plynu',
-#                                     'Dlouhodobý nedostatek potravin či pitné vody ',
-#                                     'Uchvácení státní moci ze strany úzké skupiny osob ',
-#                                     'Kybernetický, počítačový útok',
-#                                     'Technologická závislost státu na nadnárodních společnostech jako jsou Huawei, Facebook, Google apod.',
-#                                     'Krach bankovního sektoru',
-#                                     'Šíření konspiračních teorií a dezinformací po internetu',
-#                                     'Prohlubování názorových rozdílů mezi skupinami obyvatel',
-#                                     'Dlouhodobý výpadek internetu, mobilních sítí nebo telefonu',
-#                                     'Teroristický útok na místě s vysokým počtem osob',
-#                                     'Manipulace s informacemi ve veřejnoprávních médiích, tedy v České televizi nebo Českém rozhlase',
-#                                     'Manipulace s informacemi v soukromých médiích',
-#                                     'Nárůst chudoby',
-#                                     'Prohlubování ekonomických rozdílů mezi skupinami obyvatel',
-#                                     'Masová migrace',
-#                                     'Stárnutí populace',
-#                                     'Dlouhodobé výkyvy počasí, např. dlouhodobé sucho, dlouhodobě extrémně vysoké nebo nízké teploty apod.',
-#                                     'Válečný konflikt')
-#finalni select podstatnych sloupcu
-cvvm_readiness_index = cvvm_readiness_index %>% select(name, mean, sd, dont_know_per, label)
-cvvm_readiness_index_rounded = cvvm_readiness_index %>% mutate(across(c(mean, sd),round,1), dont_know_per= round(dont_know_per,2))
-#finalni vypis sestaveneho df
-print(cvvm_readiness_index_rounded, n=count(cvvm_readiness_index_rounded))
+#pridani labels
+df_danger_and_readiness_index_labeled = df_danger_and_readiness_index %>% left_join(labels, by="name")
+#vyber hrozeb
+df_danger = df_danger_and_readiness_index_labeled %>% filter(str_detect(name,"PO_1((0\\d)|(11))."))
+df_danger_final = df_danger %>% 
+  select(name, mean, sd, dont_know_per, label) %>% #vyber pozadovanych sloupcu
+  arrange(desc(mean)) %>% #serazeni
+  mutate(across(c(mean, sd),round,1), dont_know_per= round(dont_know_per,2)) #zaokrouhleni
+#finalni vypis hrozeb
+print(df_danger_final, n=count(df_danger_final))
+#vyber pripravenosti
+df_readiness = df_danger_and_readiness_index_labeled %>% filter(str_detect(name,"PO_1((12)|(10))."))
+df_readiness_final = df_readiness %>% 
+  select(name, mean, sd, dont_know_per, label) %>% #vyber pozadovanych sloupcu
+  arrange(desc(mean)) %>% #serazeni
+  mutate(across(c(mean, sd),round,1), dont_know_per= round(dont_know_per,2)) #zaokrouhleni
+#finalni vypis pripravenosti
+print(df_readiness_final, n=count(df_readiness_final))
 
 
 # Generovani grafu --------------------------------------------------------
 #definovani labels pro grafy
-#definovani a pridani labels
 labels_graph = data.frame(name = cvvm_filtred %>% names(), label = 0)
 labels_graph %>% pivot_wider(names_from = name, values_from = label)
 labels_graph$label[which(labels_graph$name == "PO_109A" | labels_graph$name == "PO_110A")] = 'Přírodní katastrofy'
@@ -191,4 +138,48 @@ labels_graph$label[which(labels_graph$name == "PO_111H" | labels_graph$name == "
 labels_graph$label[which(labels_graph$name == "PO_111I" | labels_graph$name == "PO_112I")] = 'Technologická závislost státu na nadnárodních společnostech'
 labels_graph
 
-#Generovani souboru
+#Priprava data framu
+df_danger_and_readiness_index_graph_labels = df_danger_and_readiness_index %>% 
+  left_join(labels_graph, by="name") %>% 
+  select(name, mean, label)
+#rozdeleni na hrozby a pripravenost
+df_danger_graph = df_danger_and_readiness_index_graph_labels %>% filter(str_detect(name,"PO_1((0\\d)|(11))."))
+df_rediness_graph = df_danger_and_readiness_index_graph_labels %>% filter(str_detect(name,"PO_1((12)|(10))."))
+#mergnuti podle labels
+df_graph_merge = merge(df_danger_graph, df_rediness_graph, by = "label")
+#prirazeni kategorii
+df_graph_merge$category = 0
+df_graph_category_1 = df_graph_merge %>% filter(str_detect(name.x,"PO_109[ABCDE]")) %>% mutate(category = 'Přírodní hrozby')
+df_graph_category_2 = df_graph_merge %>% filter(str_detect(name.x,"PO_109[FGHI]")) %>% mutate(category = 'Infrastrukturní hrozby')
+df_graph_category_3 = df_graph_merge %>% filter(str_detect(name.x,"PO_109[JKLM]")) %>% mutate(category = 'Konfliktní hrozby')
+df_graph_category_4 = df_graph_merge %>% filter(str_detect(name.x,"PO_111[ABCD]")) %>% mutate(category = 'Informační hrozby')
+df_graph_category_5 = df_graph_merge %>% filter(str_detect(name.x,"PO_111[EFGHI]")) %>% mutate(category = 'Politické hrozby')
+df_graph_category_6 = df_graph_merge %>% filter(str_detect(name.x,"PO_109[NOPQ]")) %>% mutate(category = 'Sociální hrozby')
+df_graph_merge_categories = rbind(df_graph_category_1, df_graph_category_2,df_graph_category_3,df_graph_category_4, df_graph_category_5, df_graph_category_6)
+df_graph_merge_categories 
+
+#graf
+df_graph_merge_categories$category = factor(df_graph_merge_categories$category, levels = c('Přírodní hrozby', 'Infrastrukturní hrozby', 'Konfliktní hrozby', 'Informační hrozby', 'Politické hrozby', 'Sociální hrozby'))
+df_graph_merge_categories %>%
+  ggplot(mapping = aes(x = mean.x, y = mean.y, color=category, label = label, group = 1)) +
+  geom_point(size = 6) +
+  geom_abline(slope=1, color="black", linetype = "dashed", size = 1) + 
+  #geom_text(color="black", check_overlap = T)+
+  geom_text_repel(color="black", hjust=-0.1, vjust=0.3) +
+  #geom_text(color="black", hjust=-0.1, vjust=0.3) +
+  scale_y_continuous(limits = c(3.8,4.9), n.breaks = 12, expand = c(0, 0)) +
+  scale_x_continuous(limits = c(4,7), n.breaks = 7, expand = c(0, 0)) +
+  scale_color_manual(values=c("#538235","#ec7c30","#b6b6b6", "#ffc000", "#89a6da", "#7e5f00")) +
+  labs(
+    x = "Míra vnímaného ohrožení",
+    y = "Míra vnímané připravenosti",
+    title = "Graf 1: Vztah míry vnímaného ohrožení a připravenosti na vybrané hrozby (průměrné hodnoty na škále 0 – 10) ",
+    caption = "Pozn.: Přerušovaná čára značí přechod, nad kterým je míra vnímané připravenost vyšší, než míra vnímaného ohrožení.\nPozn. 2: Znění položek je pro účely grafu kráceno.\nZdroj: CVVM SOÚ AV ČR, Naše společnost, 8. – 17. 6. 2019, 1024 respondentů starších 15 let, osobní rozhovor.",
+    color = ""
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.caption = element_text(hjust = 0),
+        panel.grid.major = element_line(color="#d8d8d8", linetype="solid"),
+        panel.grid.minor = element_blank()) +
+  guides(colour = guide_legend(nrow = 1))
