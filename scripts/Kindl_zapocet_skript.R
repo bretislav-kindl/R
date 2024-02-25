@@ -2,6 +2,8 @@
 
 # Knihovny ----------------------------------------------------------------
 
+install.packages(c('tidyverse', 'scales', 'RColorBrewer', 'ggrepel'))
+
 library(tidyverse)
 library(scales)
 library(RColorBrewer)
