@@ -35,3 +35,50 @@ tidy(m2, conf.int = 0.95) %>%
              y=term)) +
   geom_pointrange()+
   geom_vline(xintercept = 0, linetype = "dashed")
+
+# Categorical predictor ---------------------------------------------------
+m3 = lm(life_exp ~ di_cat, data=countries)
+summary(m3)
+
+m4 = lm(life_exp ~ 0 + di_cat, data=countries)
+summary(m4)
+
+plot_predictions(m3, condition="di_cat")
+plot_predictions(m4, condition="di_cat")#same
+
+levels(countries$di_cat)
+fct_rev(countries$di_cat) %>% levels()
+
+## Prevadeni mezi kodovanim
+avg_predictions(m3, variables = "di_cat")
+
+avg_comparisons(m4, variables = list(di_cat = "reference"))
+avg_comparisons(m4, variables = list(di_cat = "sequential"))
+avg_comparisons(m4, variables = list(di_cat = "pairwise"))
+
+# Individualni prace ------------------------------------------------------
+un %>% select(infantMortality, region, contraception)
+un_m1 = lm(infantMortality ~ region, data=un)
+summary(un_m1)
+avg_predictions(un_m1, variables="region")
+plot_predictions(un_m1, condition="region")
+
+avg_comparisons(un_m1, variables = list(region = "pairwise")) %>% 
+  arrange(desc(abs(estimate))) %>% 
+  ggplot(aes(x=estimate,
+             xmin=conf.low,
+             xmax=conf.high,
+             y=contrast)) +
+  geom_pointrange()
+
+un_m2 = lm(infantMortality ~ region + contraception, data=un)
+summary(un_m2)
+avg_comparisons(un_m2, variables = list(region="pairwise")) %>% 
+  arrange(desc(abs(estimate)))
+
+#Bonus
+un %>% 
+  ggplot(aes(x=region,
+             y=contraception))+
+  geom_boxplot()+
+  geom_jitter(height = 0, width = 0.2)
