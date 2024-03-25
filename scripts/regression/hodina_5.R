@@ -26,3 +26,12 @@ eta_squared(m2)
 
 m2up=lm(eval ~ beauty*gender, data=teachers)
 eta_squared(m2up)#zde i vzajemna iterakce mezi znaky
+
+
+# Porovnavani modelu ------------------------------------------------------
+
+anova(m1,m2)
+
+# Ostatni metriky ---------------------------------------------------------
+
+model_performance(m2)
