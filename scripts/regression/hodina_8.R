@@ -51,3 +51,10 @@ plot_predictions(m6, condition = "agea", points = 1)
 avg_slopes(m6, variables = "agea")
 
 ns(turnout$agea, df = 3) %>% attr("knots")
+
+#procvic 2
+#1
+m7 = lm(infantMortality ~ lspline(GDPperCapita, knots = c(5000,20000,30000)), data=un)
+plot_predictions(m7, condition = "GDPperCapita", points = 1)
+m8 = lm(infantMortality ~ ns(GDPperCapita, df = 3), data=un)
+plot_predictions(m8, condition = "GDPperCapita", points = 1)
