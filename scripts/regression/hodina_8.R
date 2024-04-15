@@ -36,5 +36,18 @@ plot_predictions(m3, condition = "GDPperCapita_interval")
 #3
 m4 = lm(infantMortality ~ poly(GDPperCapita, 2, raw = TRUE) ,data= un)
 plot_predictions(m4, condition = "GDPperCapita", points=1)
-m5 = lm(infantMortality ~ GDPperCapita ,data= un)
-plot_predictions(m5, condition = "GDPperCapita", points=1)
+#m5 = lm(infantMortality ~ GDPperCapita ,data= un)
+#plot_predictions(m5, condition = "GDPperCapita", points=1)
+
+# Linearni spliny ---------------------------------------------------------
+m5 = lm(vote ~ lspline(agea, knots = c(25,50,75)), data=turnout)
+summary(m5)
+plot_predictions(m5, condition = "agea", points = 1)
+
+# Prirozene spliny --------------------------------------------------------
+
+m6 = lm(vote ~ ns(agea, df = 3), data=turnout)#Pocet uzlu je df-1
+plot_predictions(m6, condition = "agea", points = 1)
+avg_slopes(m6, variables = "agea")
+
+ns(turnout$agea, df = 3) %>% attr("knots")
