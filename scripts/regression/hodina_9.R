@@ -39,3 +39,8 @@ teachers %>%
 m5 = lm(eval ~ beauty + gender, data= teachers)
 avg_slopes(m5, variables = "beauty", vcov = ~prof)
 plot_predictions(m5, condition = "beauty", points = 1, vcov = ~prof)
+
+# Bootstrap ---------------------------------------------------------------
+avg_slopes(m5, variables = "beauty") %>% 
+  inferences(method = "boot", R=500)
+
