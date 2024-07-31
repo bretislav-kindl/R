@@ -9,6 +9,7 @@ library(see)
 library(performance)
 
 #data downloads
+#https://github.com/rfordatascience/tidytuesday/blob/master/data/2024/2024-05-21/readme.md
 emissions <- read.csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-05-21/emissions.csv')
 
 unique(emissions$commodity)
@@ -27,6 +28,13 @@ summary(emissions$total_emissions_MtCO2e)
 m1 = lm(total_emissions_MtCO2e ~ 0+commodity*ns(year,df=10), data=emissions)
 summary(m1)
 plot_predictions(m1, condition = c("year","commodity"), vcov = "HC3")
+
+
+emissions_bbl = emissions %>% filter(production_unit == "Million bbl/yr")
+emissions_bcf = emissions %>% filter(production_unit == "Bcf/yr")
+emissions_tonnes = emissions %>% filter(production_unit == "Million tonnes/yr")
+emissions_tonnes_co2 = emissions %>% filter(production_unit == "Million Tonnes CO2")
+
 
 
 yemission_per_commodity_per_year = emissions %>% group_by(year, commodity) %>% summarise(emission = sum(total_emissions_MtCO2e))
