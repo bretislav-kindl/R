@@ -1,5 +1,5 @@
-#library includes
-install.packages(c("tidyverse", "marginaleffects", "lspline", "splines", "see", "performance", "sandwich"))
+# Library includes --------------------------------------------------------
+install.packages(c("tidyverse", "marginaleffects", "lspline", "splines", "see", "performance", "sandwich", "svglite"))
 
 library(tidyverse)
 library(marginaleffects)
@@ -8,46 +8,18 @@ library(lspline)
 library(see)
 library(performance)
 
-#data downloads
+
+# Data downloads ----------------------------------------------------------
 #https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-10-08
 ipf_lifts <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-10-08/ipf_lifts.csv")
-#VO: zmena prumeru vysledku u lidi, kteri se umistili, ku casu
-#VO2: rozdil v prumer_muz - prumer_zena podle veku/vahovky
 
-unique(ipf_lifts$place)
-unique(ipf_lifts$equipment)
-qplot(x=equipment,data=ipf_lifts)
-unique(ipf_lifts$age_class)
-qplot(x=age_class,data=ipf_lifts)
-unique(ipf_lifts$weight_class_kg)
-qplot(x=weight_class_kg,data=ipf_lifts)
-unique(ipf_lifts$division)
-unique(ipf_lifts$federation)
-unique(ipf_lifts$meet_name)
-unique(ipf_lifts$event)
+#VO: How does squat strength differentiate between man and woman across age and weight?
 
-
-
-#Data cleaning
-ipf_lifts$date = as.numeric(as.Date(ipf_lifts$date, "%Y-%m-%d")) 
-class(ipf_lifts$date)
-is.numeric(ipf_lifts$date)
-ipf_lifts = ipf_lifts %>%  filter(!place %in% c("DQ", "DD", "NS", "G") & !is.na(age_class))
-ipf_lifts_male = ipf_lifts %>% filter(sex == 'M')
-ipf_lifts_female = ipf_lifts %>% filter(sex == 'F')
-
-unique(ipf_lifts_male$weight_class_kg)
-qplot(x=weight_class_kg,data=ipf_lifts_male)
-unique(ipf_lifts_female$weight_class_kg)
-qplot(x=weight_class_kg,data=ipf_lifts_female)
-
-unique(ipf_lifts_male$age_class)
-qplot(x=age_class,data=ipf_lifts_male)
-unique(ipf_lifts_female$age_class)
-qplot(x=age_class,data=ipf_lifts_female)
-
+# Data cleaning and formatting --------------------------------------------
+ipf_lifts$date_ms = as.numeric(as.POSIXct(ipf_lifts$date, format="%Y-%m-%d")) #converting date to ms
+ipf_lifts = ipf_lifts %>%  filter(!place %in% c("DQ", "DD", "NS", "G") & !is.na(age_class)) #removing records of lifters that did not qualify
 ipf_lifts = ipf_lifts %>% 
-  mutate(weight_class_kg_stand = case_when(
+  mutate(weight_class_kg_stand = case_when( #creating custom weight brackets
     bodyweight_kg < 52 ~ "52-",
     bodyweight_kg >= 52 & bodyweight_kg <= 60 ~ "52-60",
     bodyweight_kg > 60 & bodyweight_kg <= 68 ~ "61-68",
@@ -55,7 +27,7 @@ ipf_lifts = ipf_lifts %>%
     bodyweight_kg > 76 & bodyweight_kg <= 84 ~ "77-84",
     bodyweight_kg > 84 & bodyweight_kg <= 90 ~ "85-90",
     bodyweight_kg > 90 ~ "90+",
-  ),age_class_stand = case_when(
+  ),age_class_stand = case_when( #creating custom age brackets
     age < 18 ~ "18-",
     age >= 18 & age <= 19 ~ "18-19",
     age > 20 & age <= 23 ~ "20-23",
@@ -66,37 +38,112 @@ ipf_lifts = ipf_lifts %>%
     age > 44 & age <= 49 ~ "45-49",
     age > 49 & age <= 54 ~ "50-54",
     age > 54 & age <= 59 ~ "55-59",
-    age > 59 & age <= 64 ~ "60-64",
-    age > 64 & age <= 69 ~ "65-69",
-    age > 70 ~ "70+",
+    age > 59 ~ "60+"
   )
-)
+  ) %>% 
+  filter(!is.na(weight_class_kg_stand) #removing records with missing weight or age data
+         & !is.na(age_class_stand)) %>% 
+  filter(date_ms >= 327708000) #removing all records older than 1980-05-21, because no woman participated in meets before that
 
-qplot(x=weight_class_kg_stand,data=ipf_lifts)
-qplot(x=age_class_stand,data=ipf_lifts)
+
+# Frequency table and histograms ------------------------------------------
+ipf_lifts_frequency_table = ipf_lifts %>% 
+  group_by(weight_class_kg_stand, age_class_stand, sex) %>%
+  summarise(frequency = n()) %>% 
+  arrange(frequency)
+write_csv(ipf_lifts_frequency_table, "data/ipf_lifts_frequency_table.csv")
+
+weight_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = weight_class_kg_stand, y = frequency, fill = sex)) +
+  geom_bar(stat = "identity") +
+  labs(
+    x = "Weight category (kg)",
+    y = "Frequency",
+    title = "Histogram of men and woman involment in powerlifting events by weight",
+    caption = "Source: https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-10-08",
+    color = "Sex"
+  ) + 
+  theme_minimal()
+ggsave(plot=weight_class_histogram, 
+       filename = "weight_class_histogram.svg",
+       device = "svg",
+       path = "plots",
+       units = "cm",
+       width = 17,
+       height = 14)
+
+age_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = age_class_stand, y = frequency, fill = sex)) +
+  geom_bar(stat = "identity") +
+  labs(
+    x = "Age category",
+    y = "Frequency",
+    title = "Histogram of men and woman involment in powerlifting events by age",
+    caption = "Source: https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-10-08",
+    color = "Sex"
+  ) + 
+  theme_minimal()
+ggsave(plot=age_class_histogram, 
+       filename = "age_class_histogram.svg",
+       device = "svg",
+       path = "plots",
+       units = "cm",
+       width = 17,
+       height = 14)
+
+ipf_lifts_by_sex_and_date_data = ipf_lifts %>% 
+  group_by(date, sex) %>% 
+  summarise(frequency = n()) %>% 
+  arrange(frequency)
+
+ipf_lifts_by_sex_and_date_histogram = ggplot(ipf_lifts_by_sex_and_date_data, aes(x = date, y = frequency, fill = sex)) +
+  geom_bar(stat = "identity") +
+  labs(
+    x = "Date",
+    y = "Frequency",
+    title = "Histogram displaing male and female participation in powerlifting events thoughout time",
+    caption = "Source: https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-10-08",
+    color = "Sex"
+  ) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.1, hjust=1, margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+ggsave(plot=ipf_lifts_by_sex_and_date_histogram, 
+       filename = "ipf_lifts_by_sex_and_date_histogram.svg",
+       device = "svg",
+       path = "plots",
+       units = "cm",
+       width = 55,
+       height = 14)
+
+# Analysis ----------------------------------------------------------------
+
+#Male and female squad strength comparison throughout time - unused
+#m1_time = lm(best3squat_kg ~ ns(date_ms, df=2)*sex*age_class_stand*weight_class_kg_stand+equipment+meet_name, data=ipf_lifts)
+#avg_comparisons_date = avg_comparisons(m1, variables = list("sex"="pairwise"), by=c("date"))
+#plot_predictions(m1_time, condition = c("date_ms", "sex"), vcov = "HC3") +
+# scale_x_continuous(labels = ~ format(as.POSIXct(.x, origin = '1970-01-01'),
+#                                       "%Y-%m-%d"))
+
+#Male and female squad strength comparison by age and weight categories
+m1 = lm(best3squat_kg ~ sex*age_class_stand*weight_class_kg_stand+equipment+meet_name, data=ipf_lifts)
+squad_strength_sex_age_weight_plot = plot_predictions(m1, condition = c("weight_class_kg_stand", "sex", "age_class_stand"), vcov = "HC3") +
+  labs(
+    x = "Weight categories (kg)",
+    y = "Best 3 squat (kg)",
+    title = "Graph with data for best squat (out of 3) for men and woman categorized by weight (x axis) and age (graph title)",
+    caption = "Source: https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-10-08",
+    color = "Sex"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(plot=squad_strength_sex_age_weight_plot, 
+       filename = "squad_strength_sex_age_weight_plot.svg",
+       device = "svg",
+       path = "plots",
+       units = "cm",
+       width = 17,
+       height = 14)
+
+avg_comparisons_best3squat_kg = avg_comparisons(m1, variables = list("sex"="pairwise"), by=c("age_class_stand", "weight_class_kg_stand"))
+write_csv(avg_comparisons_best3squat_kg, "data/avg_comparisons_best3squat_kg.csv")
 
 
-ipf_lifts_male_test = ipf_lifts_male %>% filter(date > "2000-01-01")
-ipf_lifts_male_test_2 = ipf_lifts_male %>% filter(date > "2018-01-01" & meet_name != "World Games")
-
-weird_data = ipf_lifts_male %>% filter(date == "2018-07-09")
-weird_data_2 = ipf_lifts_male %>% filter(date == "2019-07-22")
-weird_normal = ipf_lifts_male %>% filter(date == "2018-09-03")
-
-m1 = lm(best3squat_kg ~ ns(date, df=5)+sex+age_class_stand+weight_class_kg_stand+equipment+meet_name, data=ipf_lifts)
-plot_predictions(m1, condition = c("date", "sex","weight_class_kg_stand", "age_class_stand"), vcov = "HC3")
-plot_predictions(m1, condition = c("date", "sex"), vcov = "HC3")
-avg_comparisons(m1, variables = list("sex"="pairwise"))
-
-m2 = lm(best3bench_kg ~ ns(date, df=5)+sex+age_class_stand+weight_class_kg_stand+equipment+meet_name, data=ipf_lifts)
-plot_predictions(m2, condition = c("date", "sex","weight_class_kg_stand", "age_class_stand"), vcov = "HC3")
-plot_predictions(m2, condition = c("date", "sex"), vcov = "HC3")
-avg_comparisons(m2, variables = list("sex"="pairwise"))
-
-m3 = lm(best3deadlift_kg ~ ns(date, df=5)+sex+age_class_stand+weight_class_kg_stand+equipment+meet_name, data=ipf_lifts)
-plot_predictions(m3, condition = c("date", "sex","weight_class_kg_stand", "age_class_stand"), vcov = "HC3")
-plot_predictions(m3, condition = c("date", "sex"), vcov = "HC3")
-avg_comparisons(m3, variables = list("sex"="pairwise"))
-
-m3_slow = lm(best3deadlift_kg ~ 0+ns(date, df=5)*sex*age_class*weight_class_kg, data=ipf_lifts)
-plot_predictions(m3, condition = c("date", "date"), vcov = "HC3")
