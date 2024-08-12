@@ -45,8 +45,12 @@ ipf_lifts = ipf_lifts %>%
          & !is.na(age_class_stand)) %>% 
   filter(date_ms >= 327708000) #removing all records older than 1980-05-21, because no woman participated in meets before that
 
+ipf_lifts_men = ipf_lifts %>% filter(sex == "M")
+ipf_lifts_women = ipf_lifts %>% filter(sex == "F")
+ipf_lifts %>% group_by(sex) %>% summarise(frequency = n())
 
 # Frequency table and histograms ------------------------------------------
+
 ipf_lifts_frequency_table = ipf_lifts %>% 
   group_by(weight_class_kg_stand, age_class_stand, sex) %>%
   summarise(frequency = n()) %>% 
@@ -70,6 +74,8 @@ ggsave(plot=weight_class_histogram,
        units = "cm",
        width = 17,
        height = 14)
+summary(ipf_lifts_men$bodyweight_kg)
+summary(ipf_lifts_women$bodyweight_kg)
 
 age_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = age_class_stand, y = frequency, fill = sex)) +
   geom_bar(stat = "identity") +
@@ -88,6 +94,8 @@ ggsave(plot=age_class_histogram,
        units = "cm",
        width = 17,
        height = 14)
+summary(ipf_lifts_men$age)
+summary(ipf_lifts_women$age)
 
 ipf_lifts_by_sex_and_date_data = ipf_lifts %>% 
   group_by(date, sex) %>% 
@@ -113,6 +121,9 @@ ggsave(plot=ipf_lifts_by_sex_and_date_histogram,
        units = "cm",
        width = 55,
        height = 14)
+
+summary(ipf_lifts_men$best3squat_kg)
+summary(ipf_lifts_women$best3squat_kg)
 
 # Analysis ----------------------------------------------------------------
 
