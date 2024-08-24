@@ -43,11 +43,13 @@ ipf_lifts = ipf_lifts %>%
   ) %>% 
   filter(!is.na(weight_class_kg_stand) #removing records with missing weight or age data
          & !is.na(age_class_stand)) %>% 
-  filter(date_ms >= 327708000) #removing all records older than 1980-05-21, because no woman participated in meets before that
+  filter(date_ms >= 327708000) %>%  #removing all records older than 1980-05-21, because no woman participated in meets before that
+  filter(!is.na(best3squat_kg)) #removing all records without squat data
 
 ipf_lifts_men = ipf_lifts %>% filter(sex == "M")
 ipf_lifts_women = ipf_lifts %>% filter(sex == "F")
-ipf_lifts %>% group_by(sex) %>% summarise(frequency = n())
+ipf_lifts_sex_desc = ipf_lifts %>% group_by(sex) %>% summarise(frequency = n())
+write_csv(ipf_lifts_sex_desc, "data/ipf_lifts_sex_desc.csv")
 
 # Frequency table and histograms ------------------------------------------
 
@@ -74,8 +76,11 @@ ggsave(plot=weight_class_histogram,
        units = "cm",
        width = 17,
        height = 14)
-summary(ipf_lifts_men$bodyweight_kg)
-summary(ipf_lifts_women$bodyweight_kg)
+ipf_lifts_bodyweight_kg = summary(ipf_lifts$bodyweight_kg)
+ipf_lifts_bodyweight_kg_men = summary(ipf_lifts_men$bodyweight_kg)
+ipf_lifts_bodyweight_kg_women = summary(ipf_lifts_women$bodyweight_kg)
+
+write_csv(as.data.frame(t(cbind(ipf_lifts_bodyweight_kg_men, ipf_lifts_bodyweight_kg_women))), "data/ipf_lifts_age_summary.csv")
 
 age_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = age_class_stand, y = frequency, fill = sex)) +
   geom_bar(stat = "identity") +
@@ -94,8 +99,12 @@ ggsave(plot=age_class_histogram,
        units = "cm",
        width = 17,
        height = 14)
-summary(ipf_lifts_men$age)
-summary(ipf_lifts_women$age)
+
+ipf_lifts_age = summary(ipf_lifts$age)
+ipf_lifts_age_men = summary(ipf_lifts_men$age)
+ipf_lifts_age_women = summary(ipf_lifts_women$age)
+
+write_csv(as.data.frame(t(cbind(ipf_lifts_age, ipf_lifts_age_men, ipf_lifts_age_women))), "data/ipf_lifts_age_summary.csv")
 
 ipf_lifts_by_sex_and_date_data = ipf_lifts %>% 
   group_by(date, sex) %>% 
@@ -122,8 +131,11 @@ ggsave(plot=ipf_lifts_by_sex_and_date_histogram,
        width = 55,
        height = 14)
 
-summary(ipf_lifts_men$best3squat_kg)
-summary(ipf_lifts_women$best3squat_kg)
+ipf_lifts_best3squat_kg_summary = summary(ipf_lifts$best3squat_kg)
+ipf_lifts_best3squat_kg_summary_men = summary(ipf_lifts_men$best3squat_kg)
+ipf_lifts_best3squat_kg_summary_women = summary(ipf_lifts_women$best3squat_kg)
+ipf_lifts_best3squat_kg_summary = t(cbind(ipf_lifts_best3squat_kg_summary_men, ipf_lifts_best3squat_kg_summary_women))
+write_csv(as.data.frame(ipf_lifts_best3squat_kg_summary), "data/ipf_lifts_best3squat_kg_summary.csv")
 
 # Analysis ----------------------------------------------------------------
 
@@ -156,5 +168,3 @@ ggsave(plot=squad_strength_sex_age_weight_plot,
 
 avg_comparisons_best3squat_kg = avg_comparisons(m1, variables = list("sex"="pairwise"), by=c("age_class_stand", "weight_class_kg_stand"))
 write_csv(avg_comparisons_best3squat_kg, "data/avg_comparisons_best3squat_kg.csv")
-
-
