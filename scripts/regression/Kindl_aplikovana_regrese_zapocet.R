@@ -1,5 +1,5 @@
 # Library includes --------------------------------------------------------
-install.packages(c("tidyverse", "marginaleffects", "lspline", "splines", "see", "performance", "sandwich", "svglite"))
+install.packages(c("tidyverse", "marginaleffects", "lspline", "splines", "see", "performance", "sandwich", "svglite", "patchwork"))
 
 library(tidyverse)
 library(marginaleffects)
@@ -59,8 +59,14 @@ ipf_lifts_frequency_table = ipf_lifts %>%
   arrange(frequency)
 write_csv(ipf_lifts_frequency_table, "data/ipf_lifts_frequency_table.csv")
 
-weight_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = weight_class_kg_stand, y = frequency, fill = sex)) +
-  geom_bar(stat = "identity") +
+ipf_lifts_frequency_table_weight = ipf_lifts %>% 
+  group_by(weight_class_kg_stand, sex) %>%
+  summarise(frequency = n()) %>% 
+  arrange(frequency)
+
+weight_class_histogram = ggplot(ipf_lifts_frequency_table_weight, aes(x = weight_class_kg_stand, y = frequency, group  = sex)) +
+  geom_col(aes(fill = sex)) +
+  geom_text(aes(label = frequency), position = position_stack(vjust = 0.5)) +
   labs(
     x = "Weight category (kg)",
     y = "Frequency",
@@ -69,6 +75,7 @@ weight_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = weight_class_
     color = "Sex"
   ) + 
   theme_minimal()
+
 ggsave(plot=weight_class_histogram, 
        filename = "weight_class_histogram.svg",
        device = "svg",
@@ -76,14 +83,20 @@ ggsave(plot=weight_class_histogram,
        units = "cm",
        width = 17,
        height = 14)
-ipf_lifts_bodyweight_kg = summary(ipf_lifts$bodyweight_kg)
-ipf_lifts_bodyweight_kg_men = summary(ipf_lifts_men$bodyweight_kg)
-ipf_lifts_bodyweight_kg_women = summary(ipf_lifts_women$bodyweight_kg)
+ipf_lifts_bodyweight_kg = summary(ipf_lifts$bodyweight_kg, digits = 3)
+ipf_lifts_bodyweight_kg_men = summary(ipf_lifts_men$bodyweight_kg, digits = 3)
+ipf_lifts_bodyweight_kg_women = summary(ipf_lifts_women$bodyweight_kg, digits = 3)
 
-write_csv(as.data.frame(t(cbind(ipf_lifts_bodyweight_kg_men, ipf_lifts_bodyweight_kg_women))), "data/ipf_lifts_age_summary.csv")
+write_csv(as.data.frame(t(cbind(ipf_lifts_bodyweight_kg, ipf_lifts_bodyweight_kg_men, ipf_lifts_bodyweight_kg_women))), "data/ipf_lifts_bodyweight_summary.csv")
 
-age_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = age_class_stand, y = frequency, fill = sex)) +
-  geom_bar(stat = "identity") +
+ipf_lifts_frequency_table_age = ipf_lifts %>% 
+  group_by(age_class_stand, sex) %>%
+  summarise(frequency = n()) %>% 
+  arrange(frequency)
+
+age_class_histogram = ggplot(ipf_lifts_frequency_table_age, aes(x = age_class_stand, y = frequency, group  = sex)) +
+  geom_col(aes(fill = sex)) +
+  geom_text(aes(label = frequency), position = position_stack(vjust = 0.5)) +
   labs(
     x = "Age category",
     y = "Frequency",
@@ -92,6 +105,7 @@ age_class_histogram = ggplot(ipf_lifts_frequency_table, aes(x = age_class_stand,
     color = "Sex"
   ) + 
   theme_minimal()
+
 ggsave(plot=age_class_histogram, 
        filename = "age_class_histogram.svg",
        device = "svg",
@@ -100,10 +114,9 @@ ggsave(plot=age_class_histogram,
        width = 17,
        height = 14)
 
-ipf_lifts_age = summary(ipf_lifts$age)
-ipf_lifts_age_men = summary(ipf_lifts_men$age)
-ipf_lifts_age_women = summary(ipf_lifts_women$age)
-
+ipf_lifts_age = summary(ipf_lifts$age, digits = 3)
+ipf_lifts_age_men = summary(ipf_lifts_men$age, digits = 3)
+ipf_lifts_age_women = summary(ipf_lifts_women$age, digits = 3)
 write_csv(as.data.frame(t(cbind(ipf_lifts_age, ipf_lifts_age_men, ipf_lifts_age_women))), "data/ipf_lifts_age_summary.csv")
 
 ipf_lifts_by_sex_and_date_data = ipf_lifts %>% 
@@ -131,10 +144,10 @@ ggsave(plot=ipf_lifts_by_sex_and_date_histogram,
        width = 55,
        height = 14)
 
-ipf_lifts_best3squat_kg_summary = summary(ipf_lifts$best3squat_kg)
-ipf_lifts_best3squat_kg_summary_men = summary(ipf_lifts_men$best3squat_kg)
-ipf_lifts_best3squat_kg_summary_women = summary(ipf_lifts_women$best3squat_kg)
-ipf_lifts_best3squat_kg_summary = t(cbind(ipf_lifts_best3squat_kg_summary_men, ipf_lifts_best3squat_kg_summary_women))
+ipf_lifts_best3squat_kg_summary_total = summary(ipf_lifts$best3squat_kg, digits = 4)
+ipf_lifts_best3squat_kg_summary_men = summary(ipf_lifts_men$best3squat_kg, digits = 4)
+ipf_lifts_best3squat_kg_summary_women = summary(ipf_lifts_women$best3squat_kg, digits = 4)
+ipf_lifts_best3squat_kg_summary = t(cbind(ipf_lifts_best3squat_kg_summary_total, ipf_lifts_best3squat_kg_summary_men, ipf_lifts_best3squat_kg_summary_women))
 write_csv(as.data.frame(ipf_lifts_best3squat_kg_summary), "data/ipf_lifts_best3squat_kg_summary.csv")
 
 # Analysis ----------------------------------------------------------------
@@ -166,5 +179,12 @@ ggsave(plot=squad_strength_sex_age_weight_plot,
        width = 17,
        height = 14)
 
-avg_comparisons_best3squat_kg = avg_comparisons(m1, variables = list("sex"="pairwise"), by=c("age_class_stand", "weight_class_kg_stand"))
+avg_comparisons_best3squat_kg = 
+  avg_comparisons(m1, variables = list("sex"="pairwise"), by=c("age_class_stand", "weight_class_kg_stand")) %>% 
+  mutate_if(is.numeric, list(round = round, round = ~ round(.x, 2)))
+
 write_csv(avg_comparisons_best3squat_kg, "data/avg_comparisons_best3squat_kg.csv")
+
+#check model assumptions
+model_check = check_model(m1, check = c("linearity", "homogeneity", "normality", "qq"))#ggsave doesn't work, needs to be saved manually
+
